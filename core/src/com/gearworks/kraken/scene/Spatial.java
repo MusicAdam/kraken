@@ -9,7 +9,7 @@ import com.badlogic.gdx.math.collision.BoundingBox;
 
 
 /*
- *	The base class for the scene graph. This holds all the information for how the spatial is positioned in the world. 
+ *	Represents a 3 dimmensional positioning for use in the SceneGraph
  */
 public abstract class Spatial{	
 	private Matrix4 localTransform; //Location relative to parent.
@@ -125,21 +125,14 @@ public abstract class Spatial{
 			worldTransform = getParent().getWorldTransform().cpy().mul(localTransform);
 		}
 		
-		//Update bounds to be centered on location
-		float width = bounds.getWidth();
-		float height = bounds.getHeight();
-		float depth = bounds.getDepth();
+		//Center the bounds around the world transform.
 		Vector3 worldTranslation = new Vector3();
-		worldTransform.getTranslation(worldTranslation);
-		
-		//bounds.set(	new Vector3(-width/2 + worldTranslation.x, -height/2 + worldTranslation.y, -depth/2 + worldTranslation.z/2),
-		//			new Vector3(width/2 + worldTranslation.x, height/2 + worldTranslation.y, depth/2 + worldTranslation.z/2));
+		worldTransform.getTranslation(worldTranslation);		
 		bounds.mul(worldTransform);
-		System.out.println(bounds.getCenter(new Vector3()) + ", " + worldTranslation);
 		valid = true;
 	}
 	
-	protected void invalidate(){
+	public void invalidate(){
 		valid = false;
 		
 		if(this instanceof Node){
