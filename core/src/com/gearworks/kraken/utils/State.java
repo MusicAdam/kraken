@@ -6,20 +6,29 @@ public interface State {
 	/*
 	 * Called immediately after the state becomes active
 	 */
-	public void onEnter(Kraken kraken);
+	public void onEnter();
 	/*
 	 * Called immediately before the state becomes active
 	 */
-	public void onExit(Kraken kraken);
+	public void onExit();
 	/*
 	 * When true, the state can become active
 	 */
-	public boolean canEnter(Kraken kraken);
+	public boolean canEnter();
 	/*
 	 * When true, the state can become deactivated
 	 */
-	public boolean canExit(Kraken kraken);
-	public Behavior attachkBehavior(Behavior b);
-	public Behavior detachBehavior();
-	public void update();
+	public boolean canExit();
+	/*
+	 * Adds a behavior which should be updated in the update loop
+	 */
+	public Behavior attachBehavior(Behavior b);
+	/*
+	 * Detach behavior
+	 */
+	public Behavior detachBehavior(Behavior b);
+	/*
+	 * Update
+	 */
+	public void update(Kraken kraken);
 }
