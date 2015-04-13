@@ -2,9 +2,14 @@ package com.gearworks.kraken;
 
 //Provide a basic implementation of StateManager
 public class StateManager {
-	private Kraken kn; //Kraken reference
+	private static StateManager sm; 
 	
-	public StateManager(Kraken kn){
-		this.kn = kn;
+	public StateManager Get(){
+		if(sm == null)
+			sm = new StateManager();
+		return sm;
+	}
+	
+	public StateManager(){
 	}
 }

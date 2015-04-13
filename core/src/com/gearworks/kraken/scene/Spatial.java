@@ -9,7 +9,7 @@ import com.badlogic.gdx.math.collision.BoundingBox;
 /*
  *	Represents a 3 dimmensional positioning for use in the SceneGraph
  */
-public abstract class Spatial{	
+public class Spatial{	
 	private Matrix4 localTransform; //Location relative to parent.
 	private Matrix4 worldTransform; //Location relative to origin.
 	private BoundingBox bounds;
@@ -32,6 +32,7 @@ public abstract class Spatial{
 		this.name = name;
 		localTransform = new Matrix4();
 		worldTransform = new Matrix4();
+		bounds = new BoundingBox();
 	}
 	
 	public void setLocalTransform(Matrix4 transform){

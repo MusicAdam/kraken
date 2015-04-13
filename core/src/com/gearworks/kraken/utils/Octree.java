@@ -21,15 +21,37 @@ public class Octree {
 		public ArrayList<Spatial> spatials; //Spatials in this node, only set on leaves
 		public ArrayList<Bin>    children;
 		public Color dbgColor = new Color();
+		private int pruneDelay = 10;//Prune empty leaves every 10 frames
+		private int pruneTimer = 0; 
+		private boolean shouldPrune = false;
 		
 		public Bin(Bin parent){
 			this.parent = parent;
+			spatials = new ArrayList<Spatial>();
 			children = new ArrayList<Bin>();
 			Random rand = new Random();		
 			//dbgColor = new Color(rand.nextFloat() + .5f, rand.nextFloat() + .5f, rand.nextFloat() + .5f, .5f);
 			dbgColor = Color.GRAY;
 			if(parent != null)
 				parent.addChild(this);
+		}
+		
+		public void update(){
+			if(!children.isEmpty()){
+				boolean doPrune = true;
+				for(Bin bin : children){
+					bin.update();
+					doPrune = doPrune && bin.shouldPrune();
+				}
+				if(doPrune)
+					children.clear();
+			}else{
+				if(spatials.isEmpty()){
+					pruneTimer++;
+					if(pruneTimer >= pruneDelay)
+						shouldPrune = true;
+				}
+			}
 		}
 		
 		//Splits this node 8 ways, moving spatials as required.
@@ -59,41 +81,39 @@ public class Octree {
 			
 			for(BoundingBox box : boxes){
 				Bin node = new Bin(this);
-				addChild(node);
 				node.bounds = box;
 				
 				if(spatials != null){
 					Iterator<Spatial> it = spatials.iterator();
 					while(it.hasNext()){
-						Spatial spat = it.next();
-						node.insert(spat);
+						if(node.insert(it.next()))
+							it.remove();
 					}
 				}
+				addChild(node);
 			}
-			
-			spatials.clear();
 		}
 		
 		public boolean insert(Spatial spat){
-			if(bounds.intersects(spat.getBounds())){
-				if(!children.isEmpty()){
-					for(Bin child : children){
-						if(child.insert(spat)){
-							return true;
-						}
+			if(bounds.contains(spat.getBounds())){
+				for(Bin child : children){
+					if(child.insert(spat)){
+						shouldPrune = false;
+						return true;
 					}
-				}else{
-					if(spatials == null)
-						spatials = new ArrayList<Spatial>();
-					boolean success = spatials.add(spat);
-					if(spat instanceof Drawable){
-						((Drawable)spat).setColor(dbgColor);
-					}
-					if(spatials.size() > binSize){
-						partition();
-					}
-					return success;
 				}
+				
+				if(spatials == null)
+					spatials = new ArrayList<Spatial>();
+				boolean success = spatials.add(spat);
+				if(spat instanceof Drawable){
+					((Drawable)spat).setColor(dbgColor);
+				}
+				if(spatials.size() > binSize){
+					partition();
+				}
+				shouldPrune = !success;
+				return success;
 			}
 			
 			return false;
@@ -105,24 +125,23 @@ public class Octree {
 		
 		public void findNearPoint(Vector3 point, ArrayList<Spatial> found){
 			if(bounds.contains(point)){
-				if(!children.isEmpty()){
-					for(Bin child : children){
-						child.findNearPoint(point, found);
-					}
-				}else if(spatials != null){
-					found.addAll(spatials);
+				for(Bin child : children){
+					child.findNearPoint(point, found);
 				}
+				found.addAll(spatials);
 			}
 		}
 		
-		public void findInBounds(BoundingBox bounds, ArrayList<Spatial> found){
+		public void intersectsBounds(BoundingBox bounds, ArrayList<Spatial> found){
 			if(this.bounds.intersects(bounds)){
-				if(!children.isEmpty()){
-					for(Bin child : children){
-						child.findInBounds(bounds, found);
+				for(Bin child : children){
+					child.intersectsBounds(bounds, found);
+				}
+				
+				for(Spatial spat : spatials){
+					if(spat.getBounds().intersects(bounds)){
+						found.add(spat);
 					}
-				}else if(spatials != null){
-					found.addAll(spatials);
 				}
 			}			
 		}
@@ -130,22 +149,22 @@ public class Octree {
 		public void intersects(Ray ray, ArrayList<Spatial> intersects) {
 			if(Intersector.intersectRayBounds(ray, bounds, null)){
 				dbgColor = Color.WHITE;
-				if(!children.isEmpty()){
-					for(Bin child : children){
-						child.intersects(ray, intersects);
-					}
-				}else{
-					for(Spatial spat : spatials){
-						if(Intersector.intersectRayBounds(ray, spat.getBounds(), null))
-							intersects.add(spat);
-					}
+				for(Bin child : children){
+					child.intersects(ray, intersects);
+				}
+				
+				for(Spatial spat : spatials){
+					if(Intersector.intersectRayBounds(ray, spat.getBounds(), null))
+						intersects.add(spat);
 				}
 			}else{
 				dbgColor = Color.GRAY;
 			}
 		}
-
-		public void dbg_resetColors() {
+		
+		public boolean shouldPrune(){ return shouldPrune; }
+		
+		public void dbg_resetColors() {			
 			dbgColor = Color.GRAY;
 			
 			for(Spatial spat : spatials){
@@ -205,8 +224,8 @@ public class Octree {
 		root.findNearPoint(point, found);
 	}
 	
-	public void findInBounds(BoundingBox bounds, ArrayList<Spatial> found){
-		root.findInBounds(bounds, found);
+	public void intersectsBounds(BoundingBox bounds, ArrayList<Spatial> found){
+		root.intersectsBounds(bounds, found);
 	}
 	
 	public Bin getRoot(){ return root; }
@@ -214,7 +233,11 @@ public class Octree {
 	public void intersects(Ray ray, ArrayList<Spatial> intersects) {
 		root.intersects(ray, intersects);
 	}
-
+	
+	public void update(){
+		root.update();
+	}
+	
 	public void dbg_resetColors() {
 		root.dbg_resetColors();
 	}

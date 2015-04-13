@@ -35,10 +35,10 @@ public class Kraken extends ApplicationAdapter{
 		Renderer.init();
 		
 		Node test = new Node("test root");
-		test.setLocalTranslation(1, 0, 0);
+		test.setLocalTranslation(0, 0, 0);
 		
 		Random rand = new Random();
-		for(int i = 0; i < 21; i++){
+		for(int i = 0; i < 0; i++){
 			float x = (rand.nextFloat() * WORLD_SIZE.x) - WORLD_SIZE.x/2;
 			float y = (rand.nextFloat() * WORLD_SIZE.y) - WORLD_SIZE.y/2;
 			float z = (rand.nextFloat() * WORLD_SIZE.z) - WORLD_SIZE.z/2;
@@ -50,9 +50,11 @@ public class Kraken extends ApplicationAdapter{
 		Cube square = new Cube();
 		square.setSize(new Vector3(.5f, .5f, .5f));
 		//test.attach(square);
+		Renderer.getRoot().attach(test);		
+		
 		Renderer.getRoot().attach(test);
 		
-		octree = new Octree(WORLD_SIZE, 10);
+		octree = new Octree(WORLD_SIZE, 3);
 		octree.contrsuctFromSpatial(Renderer.getRoot());
 		
 		Gdx.input.setInputProcessor(InputHandler.get());
@@ -107,6 +109,7 @@ public class Kraken extends ApplicationAdapter{
 	
 	@Override
 	public void render(){
+		octree.update();
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT | GL20.GL_STENCIL_BUFFER_BIT);
 		Gdx.gl.glClearColor(0,  0,  .2f, 1);
 		

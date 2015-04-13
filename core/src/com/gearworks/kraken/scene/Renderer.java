@@ -41,8 +41,6 @@ public class Renderer {
 		pushMatrix(node.getLocalTransform());
 
 		for(Spatial child : node.getChildren()){
-			//System.out.println(shapeRenderer.getTransformMatrix().getTranslation(new Vector3()));
-			System.out.println(child.getWorldTransform());
 			if(child instanceof Node){
 				render((Node)child, tpf);
 			}else if(child instanceof Drawable){
