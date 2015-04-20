@@ -1,25 +1,30 @@
 package com.gearworks.kraken.scene;
 
+import java.util.ArrayList;
 import java.util.Stack;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.math.collision.Ray;
 import com.gearworks.kraken.Kraken;
-import com.gearworks.kraken.utils.Octree;
 
 public class Renderer {
+	public static boolean DEBUG = true;
 	private static Node root;
 	private static ShapeRenderer shapeRenderer;
+	private static ModelBatch modelBatch;
 	private static Stack<Matrix4> matrixStack;
-	private static PerspectiveCamera perspectiveCam;
+	private static PerspectiveCamera camera;
 	
 	public static void init(){
 		shapeRenderer = new ShapeRenderer();
+		modelBatch = new ModelBatch();
 		matrixStack = new Stack<Matrix4>();
 	}
 	
@@ -38,15 +43,21 @@ public class Renderer {
 	private static void render(Node node, long tpf) throws Exception{
 		if(node == null)
 			return;
-		pushMatrix(node.getLocalTransform());
-
+		pushMatrix(node.getLocalTransform());		
 		for(Spatial child : node.getChildren()){
 			if(child instanceof Node){
 				render((Node)child, tpf);
-			}else if(child instanceof Drawable){
+			}else if(child instanceof Geometry){
 				pushMatrix(child.getLocalTransform());
-				((Drawable)child).drawShapeRenderer(shapeRenderer);
+					modelBatch.begin(camera);
+					modelBatch.render(((Geometry)child));
+					modelBatch.end();
 				popMatrix();
+				if(DEBUG){
+					BoundingBox bb = ((Geometry)child).getBounds();
+					shapeRenderer.setColor(Color.GREEN);
+					shapeRenderer.box(bb.min.x, bb.min.y, bb.min.z + bb.getDepth(), bb.getWidth(), bb.getHeight(), bb.getDepth());
+				}
 			}else{				
 				throw new Exception("Spatial " + child.getName() + " is not drawable.");
 			}		
@@ -57,7 +68,7 @@ public class Renderer {
 	public static void all(long tpf){
 		try {
 			//shapeRenderer.identity();
-			shapeRenderer.setProjectionMatrix(perspectiveCam.combined);
+			shapeRenderer.setProjectionMatrix(camera.combined);
 			shapeRenderer.begin(ShapeType.Line);
 			shapeRenderer.setAutoShapeType(true);
 			shapeRenderer.setColor(1, 0, 0, 1);
@@ -84,29 +95,15 @@ public class Renderer {
 		shapeRenderer.updateMatrices();
 	}
 	
-	public static void debugRenderBin(Octree.Bin bin){
-		if(bin.children.isEmpty()){
-			shapeRenderer.setProjectionMatrix(perspectiveCam.combined);
-			shapeRenderer.begin(ShapeType.Line);
-			shapeRenderer.setColor(bin.dbgColor);
-			shapeRenderer.box(bin.bounds.min.x, bin.bounds.min.y, -bin.bounds.min.z, bin.bounds.getWidth(),bin.bounds.getHeight(), bin.bounds.getDepth());
-			shapeRenderer.end();
-		}else{
-			for(Octree.Bin child : bin.children){
-				debugRenderBin(child);
-			}
-		}
-	}	
-	
 	public static void resize(int w, int h){
         float aspectRatio = (float) w / (float) h;
-        perspectiveCam = new PerspectiveCamera(67, 2f * aspectRatio, 2f);		
-        perspectiveCam.position.z += 10f;
-        perspectiveCam.update();
+        camera = new PerspectiveCamera(67, 2f * aspectRatio, 2f);		
+        camera.position.z += 10f;
+        camera.update();
 	}
 	
 	public static PerspectiveCamera camera(){
-		return perspectiveCam;
+		return camera;
 	}
 
 	public static void drawRay(Ray ray) {
@@ -124,4 +121,9 @@ public class Renderer {
 							endPoint.x, endPoint.y, endPoint.z);
 		shapeRenderer.end();
 	}
+	
+	/*public static ArrayList<Spatial> findSpatials(Ray pickRay){
+		ArrayList<Spatial> found = new ArrayList<Spatial>();
+		
+	}*/
 }

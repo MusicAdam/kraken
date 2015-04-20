@@ -6,25 +6,31 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 
 
-/*
- *	Represents a 3 dimmensional positioning for use in the SceneGraph
+/** A leaf node which updates local and world transformations. 
+ * 
+ * @author MusicAdam
+ *
  */
 public class Spatial{	
-	private Matrix4 localTransform; //Location relative to parent.
-	private Matrix4 worldTransform; //Location relative to origin.
-	private BoundingBox bounds;
-	private Node parent;
-	private String name;
-	private boolean valid; //The update flags for when world location/rotation need to be updated.
+	public static final byte UPDATE_ALL				=   (byte) 0xFF;
+	public static final byte UPDATE_TRANSFORM_BYTE	=	0x1;
+	public static final byte UPDATE_BOUNDS_BYTE		=	0X2;
+	protected Matrix4 localTransform; //Location relative to parent.
+	protected Matrix4 worldTransform; //Location relative to origin.
+	protected Node parent;
+	protected String name;
+	protected byte flags; //The update flags for when world location/rotation need to be updated.
+						//When UPDATE_TRANSFORM_BYTE is set, the transform is updated.
+						//UPDATE_BOUNDS_BYTE is set when the bounds change, and sets it in the parent so the parent can update its bounds.
+						
 	
 	public Spatial(){
 		parent = null;
 		name = "default";
-		valid = false;
+		flags = UPDATE_ALL;
 		
 		localTransform = new Matrix4();
 		worldTransform = new Matrix4();
-		bounds = new BoundingBox();
 	}
 	
 	public Spatial(String name){
@@ -32,7 +38,6 @@ public class Spatial{
 		this.name = name;
 		localTransform = new Matrix4();
 		worldTransform = new Matrix4();
-		bounds = new BoundingBox();
 	}
 	
 	public void setLocalTransform(Matrix4 transform){
@@ -45,7 +50,7 @@ public class Spatial{
 	}
 	
 	public Matrix4 getWorldTransform(){
-		validate();
+		validateTransform();
 		return worldTransform;
 	}
 	
@@ -54,7 +59,7 @@ public class Spatial{
 	}
 	
 	public Vector3 getWorldTranslation(){
-		validate();
+		validateTransform();
 		return getWorldTransform().getTranslation(new Vector3());		
 	}
 	
@@ -63,17 +68,17 @@ public class Spatial{
 	}
 	
 	public Quaternion getWorldRotation(){
-		validate();
+		validateTransform();
 		return getWorldTransform().getRotation(new Quaternion());
 	}
 	
 	public Vector3 getLocalScale(){
-		validate();
+		validateTransform();
 		return getLocalTransform().getScale(new Vector3());
 	}
 	
 	public Vector3 getWorldScale(){
-		validate();
+		validateTransform();
 		return getWorldTransform().getScale(new Vector3());
 	}
 	
@@ -86,21 +91,27 @@ public class Spatial{
 		setLocalTranslation(new Vector3(x, y, z));
 	}
 	
+	public void setLocalRotation(Quaternion rotation){
+		rotation.nor();
+		localTransform.set(getLocalTranslation(), rotation);
+		invalidateTransform();
+	}
+	
+	/** Sets the local translation to reflect the world translation provided and sets the worldTranform 
+	 * the the given worldTranslation. This will update the local and world transforms and doesn't not 
+	 * invalidate the spatial
+	 * 
+	 * @param translation to use*/
 	public void setWorldTranslation(Vector3 worldTranslation){
-		Vector3 myLocalTranslation = new Vector3();
-		getWorldTransform().getTranslation(myLocalTranslation); //The world translation will be the same as the local translation if we have no parent  
-		
-		//If we are a child, calculate our new local translation based on our parents world translation, and our new world translation
-		if(parent != null){
-			Vector3 myWorldTranslation = new Vector3();
-			Vector3 parentWorldTranslation = new Vector3();
-			getParent().getWorldTransform().getTranslation(parentWorldTranslation);
-			getWorldTransform().getTranslation(worldTranslation);
-			myLocalTranslation = myWorldTranslation.sub(parentWorldTranslation);
-			
+		if(parent == null){
+			localTransform.setTranslation(worldTranslation);
+			worldTransform.setTranslation(worldTranslation);
+		}else{
+			Vector3 myLocalTransform = new Vector3();
+			myLocalTransform = worldTranslation.sub(parent.getWorldTranslation());
+			localTransform.setTranslation(myLocalTransform);
+			worldTransform.setTranslation(worldTranslation);
 		}
-		getWorldTransform().setTranslation(worldTranslation);
-		getLocalTransform().setTranslation(myLocalTranslation); //Don't use setLocalTranstion() here because we don't need to invalidate()
 	}
 	
 	public void setWorldTranslation(float x, float y, float z){
@@ -112,36 +123,36 @@ public class Spatial{
 	}	
 	
 	public void validate(){
-		if(valid) return;
-		
-		//Update location
-		if(parent == null){
-			worldTransform = localTransform;
-		}else{
-			if(!getParent().isValid())
-				getParent().validate();
+		validateTransform();
+	}
+	
+	public void validateTransform(){
+		if(!isTransformValid()){		
+			//Update location
+			if(parent == null){
+				worldTransform = localTransform;
+			}else{
+				if(!getParent().isTransformValid())
+					getParent().validateTransform();
+				
+				worldTransform = getParent().getWorldTransform().cpy().mul(localTransform);
+			}
 			
-			worldTransform = getParent().getWorldTransform().cpy().mul(localTransform);
-		}
-		
-		//Center the bounds around the world transform.
-		Vector3 worldTranslation = new Vector3();
-		worldTransform.getTranslation(worldTranslation);		
-		bounds.mul(worldTransform);
-		valid = true;
+			flags &= ~UPDATE_TRANSFORM_BYTE;
+		}		
+	}
+	
+	public void invalidateTransform(){
+		flags |= UPDATE_TRANSFORM_BYTE;
 	}
 	
 	public void invalidate(){
-		valid = false;
-		
-		if(this instanceof Node){
-			for(Spatial child : ((Node)this).getChildren()){
-				child.invalidate();
-			}
-		}
+		invalidateTransform();
 	}
 	
-	public boolean isValid(){ return valid; }
+	public boolean isValid(){ return flags == 0; }
+	public boolean isTransformValid(){ return (flags & UPDATE_TRANSFORM_BYTE) == 0;}
+	public boolean isBoundsValid(){ return (flags & UPDATE_BOUNDS_BYTE) == 0;}
 
 	public void setParent(Node parent){
 		this.parent = parent;
@@ -150,25 +161,6 @@ public class Spatial{
 	
 	public String getName(){ return name; }
 	public void setName(String name){ this.name = name; }
-
-	public BoundingBox getBounds(){
-		validate();
-		return bounds;
-	}
-
-	public void setBounds(BoundingBox bounds) {
-		this.bounds = bounds;
-		invalidate();
-	}
-	
-	public Vector3 getSize(){
-		return new Vector3(bounds.getWidth(), bounds.getHeight(), bounds.getDepth());
-	}
-	
-	public void setSize(Vector3 size){
-		bounds.set(size.cpy().scl(-.5f), size.cpy().scl(.5f));
-		invalidate();
-	}
 	
 	public void destroy(){
 		if(this instanceof Node){

@@ -2,25 +2,29 @@ package com.gearworks.kraken.scene;
 
 import java.util.ArrayList;
 
+import com.badlogic.gdx.math.collision.BoundingBox;
+
+/** A group node that organizes spatials into a tree structure.
+ * 
+ * @author MusicAdam
+ */
 public class Node extends Spatial {
 	private ArrayList<Spatial> children;
 	
 	public Node(){
 		super();
 		children = new ArrayList<Spatial>();
-		System.out.println("NODE CONSTRUCTOR1");
 	}
 	
 	public Node(String name){
 		super(name);
 		children = new ArrayList<Spatial>();
-		System.out.println("NODE CONSTRUCTOR2");
 	}
 	
 	public void attach(Spatial child){
 		children.add(child);
 		child.setParent(this);
-		child.invalidate();
+		invalidate();
 	}
 	
 	public ArrayList<Spatial> getChildren(){ return children; }
@@ -89,4 +93,12 @@ public class Node extends Spatial {
 		children.clear();
 	}
 	
+	@Override
+	public void invalidate(){
+		super.invalidate();
+		
+		for(Spatial child : getChildren()){
+			child.invalidate();
+		}
+	}
 }
