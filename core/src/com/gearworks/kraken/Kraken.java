@@ -24,6 +24,7 @@ import com.gearworks.kraken.scene.Geometry;
 import com.gearworks.kraken.scene.Node;
 import com.gearworks.kraken.scene.Renderer;
 import com.gearworks.kraken.scene.Spatial;
+import com.gearworks.kraken.tests.SceneTest;
 
 
 public class Kraken extends ApplicationAdapter{
@@ -34,7 +35,11 @@ public class Kraken extends ApplicationAdapter{
 	
 	@Override
 	public void create(){
+		StateManager.init();
 		Renderer.init();
+		
+		StateManager.attach(new SceneTest());
+		StateManager.attach(new SceneTest());
 		
 		ModelBuilder builder = new ModelBuilder();
 		Model boxModel = builder.createBox(1, 1, 1, new Material(), VertexAttributes.Usage.Position);
@@ -119,6 +124,8 @@ public class Kraken extends ApplicationAdapter{
 		if(mouseDown){
 			Renderer.camera().rotateAround(new Vector3(), Vector3.Y, direction * 1f);
 		}
+		
+		StateManager.update();
 		Renderer.update();
 		Renderer.all(0);
 		

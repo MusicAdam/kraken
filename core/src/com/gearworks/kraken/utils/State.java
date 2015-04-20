@@ -30,5 +30,5 @@ public interface State {
 	/*
 	 * Update
 	 */
-	public void update(Kraken kraken);
+	public void update();
 }
