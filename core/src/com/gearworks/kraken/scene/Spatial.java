@@ -139,7 +139,7 @@ public class Spatial{
 			}
 			
 			flags &= ~UPDATE_TRANSFORM_BYTE;
-		}		
+		}
 	}
 	
 	public void invalidateTransform(){
@@ -150,9 +150,8 @@ public class Spatial{
 		invalidateTransform();
 	}
 	
-	public boolean isValid(){ return flags == 0; }
+	public boolean isValid(){ return isTransformValid(); }
 	public boolean isTransformValid(){ return (flags & UPDATE_TRANSFORM_BYTE) == 0;}
-	public boolean isBoundsValid(){ return (flags & UPDATE_BOUNDS_BYTE) == 0;}
 
 	public void setParent(Node parent){
 		this.parent = parent;

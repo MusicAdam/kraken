@@ -25,12 +25,11 @@ import com.gearworks.kraken.scene.Node;
 import com.gearworks.kraken.scene.Renderer;
 import com.gearworks.kraken.scene.Spatial;
 import com.gearworks.kraken.tests.SceneTest;
+import com.gearworks.kraken.tests.TestStateManager;
 
 
 public class Kraken extends ApplicationAdapter{
 	public static final Vector3 WORLD_SIZE = new Vector3(10, 5, 5);
-	private boolean mouseDown;
-	private int direction = 1;
 	Ray ray;
 	
 	@Override
@@ -38,25 +37,7 @@ public class Kraken extends ApplicationAdapter{
 		StateManager.init();
 		Renderer.init();
 		
-		StateManager.attach(new SceneTest());
-		StateManager.attach(new SceneTest());
-		
-		ModelBuilder builder = new ModelBuilder();
-		Model boxModel = builder.createBox(1, 1, 1, new Material(), VertexAttributes.Usage.Position);
-		Geometry test = new Geometry(){
-			@Override
-			public void update(){
-				Quaternion rotation = new Quaternion();
-				rotation.setFromAxis(1, 1, 0, 1);
-				rotation = getLocalRotation().mul(rotation);
-				setLocalRotation(rotation);
-			}
-		};
-		test.setModelInstance(new ModelInstance(boxModel));
-		Renderer.getRoot().attach(test);
-		Renderer.getRoot().setLocalRotation(new Quaternion().setFromAxis(0, 1, 0, 45));
-		Renderer.getRoot().setLocalTranslation(1, 0, 0);
-		test.setLocalRotation(new Quaternion().setFromAxis(1, 0, 0, 45));
+		TestStateManager.runTests();
 		
 		/*
 		Node test = new Node("test root");
@@ -85,45 +66,12 @@ public class Kraken extends ApplicationAdapter{
 		*/
 		
 		Gdx.input.setInputProcessor(InputHandler.get());
-		
-		InputHandler.addListener(new MouseEvent(MouseEvent.MOUSE_DOWN){
-			@Override
-			public boolean callback(){
-				mouseDown = true;
-				direction = (this.button == 1) ? 1 : -1;
-				return false;
-			}
-		});
-		
-		InputHandler.addListener(new MouseEvent(MouseEvent.MOUSE_UP){
-			@Override
-			public boolean callback(){
-				mouseDown = false;
-				return false;
-			}
-		});
-		
-		InputHandler.addListener(new MouseEvent(MouseEvent.MOUSE_SCROLL){
-			@Override
-			public boolean callback(){
-				if(delta > 0){
-					Renderer.camera().translate(Renderer.camera().direction.cpy().scl(-1.5f));
-				}else{
-					Renderer.camera().translate(Renderer.camera().direction.cpy().scl(1.5f));		
-				}
-				return false;
-			}
-		});
 	}
 	
 	@Override
 	public void render(){
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT | GL20.GL_STENCIL_BUFFER_BIT);
 		Gdx.gl.glClearColor(0,  0,  .2f, 1);
-		
-		if(mouseDown){
-			Renderer.camera().rotateAround(new Vector3(), Vector3.Y, direction * 1f);
-		}
 		
 		StateManager.update();
 		Renderer.update();

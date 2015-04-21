@@ -35,7 +35,7 @@ public class Renderer {
 	}
 	
 	public static void update(){
-		for(Spatial child : root.getChildren()){
+		for(Spatial child : getRoot().getChildren()){
 				child.update();
 		}
 	}

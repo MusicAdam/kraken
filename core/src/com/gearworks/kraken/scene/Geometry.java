@@ -99,6 +99,8 @@ public class Geometry extends Spatial implements RenderableProvider{
 		flags |= UPDATE_BOUNDS_BYTE;
 	}
 
+	public boolean isBoundsValid(){ return (flags & UPDATE_BOUNDS_BYTE) == 0;}
+
 	@Override
 	public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
 		if(modelInstance != null)

@@ -86,6 +86,7 @@ public class Node extends Spatial {
 
 	public void clear() {
 		for(Spatial c : getChildren()){
+			c.destroy();
 			if(c instanceof Node)
 				((Node)c).clear();
 		}
