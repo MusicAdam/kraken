@@ -2,10 +2,14 @@ package com.gearworks.kraken.tests;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.VertexAttributes;
+import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.model.Node;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
@@ -26,6 +30,7 @@ public class SceneTest extends TestState{
 	private MouseEvent mouseUpEvt;
 	private MouseEvent mouseScrollEvt;
 	private KeyboardEvent spaceUpEvt;
+	ModelInstance testInstance;
 
 	@Override
 	public void onEnter() {
@@ -46,8 +51,33 @@ public class SceneTest extends TestState{
 		
 		
 		ModelBuilder builder = new ModelBuilder();
-		Model boxModel = builder.createBox(1, 1, 1, new Material(), VertexAttributes.Usage.Position);
+		Model boxModel = builder.createSphere(2f, 2f, 2f, 32, 32, new Material(new ColorAttribute(ColorAttribute.Diffuse, Color.WHITE)),
+				Usage.Position | Usage.Normal);
+		//Model boxModel = builder.createBox(1, 1, 1, new Material(new ColorAttribute(ColorAttribute.Diffuse, Color.WHITE)), Usage.Position | Usage.Normal);
+		
 		Geometry geom = new Geometry(){
+			@Override
+			public void update(){
+				Quaternion rotation = new Quaternion();
+				rotation.setFromAxis(1, 1, 0, 1);
+				rotation = getLocalRotation().mul(rotation);
+				setLocalRotation(rotation);
+			}
+		};
+		geom.setModelInstance(new ModelInstance(boxModel));
+		geom.setLocalTranslation(1, 0, 0);
+		Renderer.getRoot().attach(geom);
+		
+		testInstance = new ModelInstance(boxModel);
+		for(Node n : testInstance.nodes){
+			System.out.println(n.id);
+		}
+		testInstance.getNode("node1").translation.set(-1, 0, 0);
+		//testInstance.transform.setTranslation(-1, 0, 0);
+		testInstance.calculateTransforms();
+		Renderer.debug_setTestModelInstance(testInstance);
+		
+		/*Geometry geom = new Geometry(){
 			@Override
 			public void update(){
 				Quaternion rotation = new Quaternion();
@@ -59,9 +89,8 @@ public class SceneTest extends TestState{
 		geom.setModelInstance(new ModelInstance(boxModel));
 		Renderer.getRoot().attach(geom);
 		Renderer.getRoot().setLocalRotation(new Quaternion().setFromAxis(0, 1, 0, 45));
-		Renderer.getRoot().setLocalTranslation(1, 0, 0);
-		geom.setLocalRotation(new Quaternion().setFromAxis(1, 0, 0, 45));
-		
+		//geom.setLocalRotation(new Quaternion().setFromAxis(1, 0, 0, 45));
+		*/
 		mouseDownEvt = InputHandler.addListener(new MouseEvent(MouseEvent.MOUSE_DOWN){
 			@Override
 			public boolean callback(){

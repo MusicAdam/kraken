@@ -64,7 +64,14 @@ public class Geometry extends Spatial implements RenderableProvider{
 	public void validateTransform(){
 		super.validateTransform();
 		if(modelInstance != null){
-			modelInstance.transform = worldTransform;
+			//Since the bounding box is calculated based on the nodes
+			//transformation and not the transformation of the modelInstance
+			//me must manually set the top nodes' globalTransformations
+			for(com.badlogic.gdx.graphics.g3d.model.Node n : modelInstance.nodes){
+				worldTransform.getTranslation(n.translation);
+				worldTransform.getRotation(n.rotation);
+				worldTransform.getScale(n.scale);
+			}
 			modelInstance.calculateTransforms();
 		}
 	}
@@ -74,7 +81,6 @@ public class Geometry extends Spatial implements RenderableProvider{
 			if(!isTransformValid())
 				validateTransform();
 			modelInstance.calculateBoundingBox(bounds);
-			bounds.mul(localTransform);
 			flags &= ~UPDATE_BOUNDS_BYTE;
 		}
 	}
